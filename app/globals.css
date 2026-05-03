@@ -1,26 +1,213 @@
 @import "tailwindcss";
 
+/* Tailwind v4: enable `dark:` variant driven by a `.dark` class on <html>.
+   The ThemeProvider toggles that class. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Vercel-style monochrome palette — black, white, grays only. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #ffffff;
+  --bg-subtle: #fafafa;
+  --bg-muted: #f4f4f5;
+  --bg-hover: #f1f1f3;
+
+  --fg: #09090b;
+  --fg-muted: #27272a;       /* zinc-800 — body prose, high contrast on white */
+  --fg-subtle: #71717a;      /* zinc-500 — hints / captions only */
+
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+
+  --code-bg: #fafafa;
+  --code-border: #e4e4e7;
+
+  --selection-bg: #0a0a0a;
+  --selection-fg: #ffffff;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --bg: #0a0a0a;
+  --bg-subtle: #111111;
+  --bg-muted: #1a1a1a;
+  --bg-hover: #1f1f1f;
+
+  --fg: #fafafa;
+  --fg-muted: #d4d4d8;       /* zinc-300 — body prose, high contrast on near-black */
+  --fg-subtle: #a1a1aa;
+
+  --border: #27272a;
+  --border-strong: #3f3f46;
+
+  --code-bg: #111111;
+  --code-border: #27272a;
+
+  --selection-bg: #fafafa;
+  --selection-fg: #0a0a0a;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  border-color: var(--border);
+}
+
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Avoid scrollbar-induced layout shift on routes that have less content. */
+  scrollbar-gutter: stable;
+  /* Sticky top bar is 56 px (h-14) — keep anchor jumps below it. */
+  scroll-padding-top: 4rem;
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-text-size-adjust: 100%;
+  /* Hint to browsers that we render two themes. */
+  color-scheme: light dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Theme swap: rely on the View Transitions API (Chrome/Edge) for a single
+   GPU-composited cross-fade instead of animating every element. Browsers
+   without VT API just snap — that's faster than a laggy per-element transition. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 220ms;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+::view-transition-old(root) {
+  animation-name: theme-fade-out;
+}
+::view-transition-new(root) {
+  animation-name: theme-fade-in;
+}
+@keyframes theme-fade-out {
+  to { opacity: 0; }
+}
+@keyframes theme-fade-in {
+  from { opacity: 0; }
+}
+
+/* Disable view-transition for users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-subtle);
+}
+
+/* Theme-aware utility classes referenced across components. */
+.surface { background: var(--bg); color: var(--fg); }
+.surface-subtle { background: var(--bg-subtle); }
+.surface-muted { background: var(--bg-muted); }
+.surface-hover:hover { background: var(--bg-hover); }
+.fg { color: var(--fg); }
+.fg-muted { color: var(--fg-muted); }
+.fg-subtle { color: var(--fg-subtle); }
+.border-default { border-color: var(--border); }
+.border-strong { border-color: var(--border-strong); }
+
+/* Code block surface */
+.code-surface {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+}
+.code-wrapper pre {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.65 !important;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace !important;
+}
+
+/* Focus ring — monochrome */
+:where(a, button, [role="button"], input, select, textarea):focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Inline code & emphasis — monochrome, readable in both themes. */
+code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 0.875em;
+  padding: 0.125em 0.35em;
+  border-radius: 4px;
+  background: var(--bg-muted);
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+pre code,
+.code-wrapper code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+strong, b {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* Tables — monochrome */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+th, td {
+  text-align: left;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  background: var(--bg-subtle);
+  color: var(--fg);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Reduce motion respect */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
